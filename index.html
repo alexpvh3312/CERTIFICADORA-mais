@@ -59,6 +59,12 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+        .animate-shake { animation: shake 0.2s ease-in-out infinite; }
         .custom-scrollbar::-webkit-scrollbar {
             width: 5px;
         }

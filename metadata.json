@@ -1,6 +1,6 @@
 {
   "name": "APSILVA CERTIFICADORA - ATIVA WhatsApp",
-  "description": "Uma landing page moderna para um chatbot de WhatsApp especializado na venda e emissão de certificados digitais e-CPF e e-CNPJ.",
+  "description": "Landing page moderna para certificadora digital com painel administrativo, persistência de dados no servidor e exportação completa do projeto em ZIP.",
   "requestFramePermissions": [
     "camera",
     "microphone"

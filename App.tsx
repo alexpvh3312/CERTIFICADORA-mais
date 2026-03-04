@@ -58,7 +58,7 @@ const DEFAULT_CONFIG = {
       popular: false
     }
   ],
-  heroVideoUrl: "https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-a-circuit-board-1610-large.mp4",
+  heroVideoUrl: "https://assets.mixkit.co/videos/preview/mixkit-robot-hand-typing-on-a-futuristic-keyboard-43440-large.mp4",
   heroVideoOpacity: 0.4
 };
 
@@ -131,15 +131,25 @@ const App: React.FC = () => {
 
   // Carregar dados iniciais
   useEffect(() => {
-    const savedConfig = localStorage.getItem('apsilva_config');
-    if (savedConfig) {
-      const parsed = JSON.parse(savedConfig);
-      // Fallback para manter compatibilidade se o carrossel não estiver no salvo
-      if (!parsed.carouselImages) parsed.carouselImages = DEFAULT_CONFIG.carouselImages;
-      if (!parsed.heroVideoUrl) parsed.heroVideoUrl = DEFAULT_CONFIG.heroVideoUrl;
-      if (parsed.heroVideoOpacity === undefined) parsed.heroVideoOpacity = DEFAULT_CONFIG.heroVideoOpacity;
-      setConfig(parsed);
-    }
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch('/api/config');
+        const serverConfig = await response.json();
+        if (serverConfig) {
+          // Fallback para manter compatibilidade
+          if (!serverConfig.carouselImages) serverConfig.carouselImages = DEFAULT_CONFIG.carouselImages;
+          if (!serverConfig.heroVideoUrl || serverConfig.heroVideoUrl === "https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-a-circuit-board-1610-large.mp4") {
+            serverConfig.heroVideoUrl = DEFAULT_CONFIG.heroVideoUrl;
+          }
+          if (serverConfig.heroVideoOpacity === undefined) serverConfig.heroVideoOpacity = DEFAULT_CONFIG.heroVideoOpacity;
+          setConfig(serverConfig);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar config do servidor:", error);
+      }
+    };
+
+    fetchConfig();
     
     const savedLeads = localStorage.getItem('apsilva_leads');
     if (savedLeads) setLeads(JSON.parse(savedLeads));
@@ -154,10 +164,45 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [config.carouselImages]);
 
-  const saveConfig = () => {
-    localStorage.setItem('apsilva_config', JSON.stringify(config));
-    alert("Configurações salvas!");
-    setIsAdminOpen(false);
+  const saveConfig = async () => {
+    try {
+      const response = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      });
+      if (response.ok) {
+        alert("Configurações salvas permanentemente no servidor!");
+        setIsAdminOpen(false);
+      } else {
+        alert("Erro ao salvar no servidor.");
+      }
+    } catch (error) {
+      console.error("Erro ao salvar config no servidor:", error);
+      alert("Erro de conexão ao salvar.");
+    }
+  };
+
+  const handleDownloadProject = async () => {
+    try {
+      const response = await fetch('/api/download-project');
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'projeto-apsilva.zip';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        alert("Erro ao baixar o projeto.");
+      }
+    } catch (error) {
+      console.error("Erro ao baixar projeto:", error);
+      alert("Erro de conexão ao baixar.");
+    }
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -380,7 +425,7 @@ _Aguardando agendamento da videoconferência._`;
       <Navbar />
 
       {/* Hero Section */}
-      <section className="pt-40 pb-20 px-4 text-center relative overflow-hidden min-h-[80vh] flex items-center justify-center">
+      <section className="pt-32 pb-16 sm:pt-40 sm:pb-20 px-4 text-center relative overflow-hidden min-h-[80vh] flex items-center justify-center">
         <video 
           autoPlay 
           loop 
@@ -395,29 +440,29 @@ _Aguardando agendamento da videoconferência._`;
         <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-transparent to-[#050505] z-[1]"></div>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 via-transparent to-transparent opacity-50 pointer-events-none z-[2]"></div>
         
-        <div className="max-w-5xl mx-auto animate-fade-in space-y-10 relative z-10">
-          <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+        <div className="max-w-5xl mx-auto animate-fade-in space-y-8 sm:space-y-10 relative z-10">
+          <div className="inline-flex items-center gap-3 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
             <div className="flex -space-x-2">
               {[1,2,3].map(i => (
-                <div key={i} className="w-6 h-6 rounded-full border-2 border-[#050505] overflow-hidden">
+                <div key={i} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 border-[#050505] overflow-hidden">
                   <img src={`https://picsum.photos/seed/hero${i}/50/50`} alt="User" />
                 </div>
               ))}
             </div>
             <div className="h-4 w-[1px] bg-white/10 mx-1"></div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">
               <span className="text-emerald-500">+5 mil</span> clientes satisfeitos
             </span>
           </div>
-          <h1 className="text-6xl sm:text-7xl lg:text-9xl font-black text-white leading-[0.85] tracking-[-0.04em] uppercase">
+          <h1 className="text-5xl sm:text-7xl lg:text-9xl font-black text-white leading-[0.85] tracking-[-0.04em] uppercase">
             Certificado <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-b from-emerald-400 to-emerald-700">Digital</span>
           </h1>
-          <p className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed font-medium">
+          <p className="text-base sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed font-medium px-4">
             A APSILVA une tecnologia e agilidade. Tenha seu e-CPF ou e-CNPJ validado em minutos através de videoconferência.
           </p>
-          <div className="pt-6">
-            <a href="#precos" className="bg-emerald-600 text-white px-12 py-6 rounded-2xl font-black text-xl shadow-[0_0_40px_rgba(16,185,129,0.3)] hover:scale-105 hover:bg-emerald-500 transition-all inline-block uppercase tracking-tighter">
+          <div className="pt-4 sm:pt-6">
+            <a href="#precos" className="bg-emerald-600 text-white px-8 py-4 sm:px-12 sm:py-6 rounded-2xl font-black text-lg sm:text-xl shadow-[0_0_40px_rgba(16,185,129,0.3)] hover:scale-105 hover:bg-emerald-500 transition-all inline-block uppercase tracking-tighter">
               Escolher meu Certificado
             </a>
           </div>
@@ -429,57 +474,57 @@ _Aguardando agendamento da videoconferência._`;
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Big Card */}
-            <div className="md:col-span-2 md:row-span-2 bg-[#0a0a0a] border border-white/5 rounded-[40px] p-10 flex flex-col justify-between group hover:border-emerald-500/30 transition-all overflow-hidden relative">
+            <div className="md:col-span-2 md:row-span-2 bg-[#0a0a0a] border border-white/5 rounded-[32px] sm:rounded-[40px] p-6 sm:p-10 flex flex-col justify-between group hover:border-emerald-500/30 transition-all overflow-hidden relative">
               <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[80px] -mr-32 -mt-32 group-hover:bg-emerald-500/10 transition-all"></div>
               <div className="relative z-10">
-                <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-8">
-                  <svg className="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-6 sm:mb-8">
+                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                 </div>
-                <h3 className="text-4xl font-black text-white leading-none tracking-tighter uppercase mb-4">Videoconferência <br/> Instantânea</h3>
-                <p className="text-slate-400 text-lg font-medium leading-relaxed max-w-sm">Valide seu certificado sem sair de casa, em poucos minutos via celular com nossa equipe especializada.</p>
+                <h3 className="text-2xl sm:text-4xl font-black text-white leading-none tracking-tighter uppercase mb-4">Videoconferência <br/> Instantânea</h3>
+                <p className="text-slate-400 text-base sm:text-lg font-medium leading-relaxed max-w-sm">Valide seu certificado sem sair de casa, em poucos minutos via celular com nossa equipe especializada.</p>
               </div>
-              <div className="mt-12 relative z-10">
+              <div className="mt-8 sm:mt-12 relative z-10">
                 <div className="flex -space-x-3">
                   {[1,2,3,4].map(i => (
-                    <div key={i} className="w-12 h-12 rounded-full border-4 border-[#0a0a0a] bg-slate-800 overflow-hidden">
+                    <div key={i} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-[#0a0a0a] bg-slate-800 overflow-hidden">
                       <img src={`https://picsum.photos/seed/${i+10}/100/100`} alt="User" referrerPolicy="no-referrer" />
                     </div>
                   ))}
-                  <div className="w-12 h-12 rounded-full border-4 border-[#0a0a0a] bg-emerald-500 flex items-center justify-center text-xs font-black">+5k</div>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-[#0a0a0a] bg-emerald-500 flex items-center justify-center text-[10px] sm:text-xs font-black">+5k</div>
                 </div>
-                <p className="text-xs text-slate-500 mt-4 font-bold uppercase tracking-widest">Mais de 5.000 emissões realizadas este mês</p>
+                <p className="text-[10px] text-slate-500 mt-4 font-bold uppercase tracking-widest">Mais de 5.000 emissões realizadas este mês</p>
               </div>
             </div>
 
             {/* Medium Card 1 */}
-            <div className="md:col-span-2 bg-[#0a0a0a] border border-white/5 rounded-[40px] p-10 group hover:border-emerald-500/30 transition-all relative overflow-hidden">
+            <div className="md:col-span-2 bg-[#0a0a0a] border border-white/5 rounded-[32px] sm:rounded-[40px] p-6 sm:p-10 group hover:border-emerald-500/30 transition-all relative overflow-hidden">
               <div className="flex items-start justify-between">
                 <div className="space-y-4">
-                  <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center">
-                    <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                   </div>
-                  <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Segurança Máxima</h3>
-                  <p className="text-slate-400 font-medium leading-relaxed">Criptografia de ponta a ponta seguindo rigorosamente as normas do ITI Brasil.</p>
+                  <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tighter">Segurança Máxima</h3>
+                  <p className="text-slate-400 text-sm sm:text-base font-medium leading-relaxed">Criptografia de ponta a ponta seguindo rigorosamente as normas do ITI Brasil.</p>
                 </div>
-                <div className="w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl absolute -right-10 -top-10"></div>
+                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-emerald-500/5 rounded-full blur-3xl absolute -right-10 -top-10"></div>
               </div>
             </div>
 
             {/* Small Card 1 */}
-            <div className="bg-[#0a0a0a] border border-white/5 rounded-[40px] p-8 group hover:border-emerald-500/30 transition-all">
+            <div className="bg-[#0a0a0a] border border-white/5 rounded-[32px] sm:rounded-[40px] p-6 sm:p-8 group hover:border-emerald-500/30 transition-all">
               <div className="space-y-4">
-                <h4 className="text-emerald-500 font-black text-4xl tracking-tighter">15min</h4>
-                <p className="text-white font-bold uppercase text-xs tracking-widest">Tempo médio de emissão</p>
+                <h4 className="text-emerald-500 font-black text-3xl sm:text-4xl tracking-tighter">15min</h4>
+                <p className="text-white font-bold uppercase text-[10px] sm:text-xs tracking-widest">Tempo médio de emissão</p>
               </div>
             </div>
 
             {/* Small Card 2 */}
-            <div className="bg-[#0a0a0a] border border-white/5 rounded-[40px] p-8 group hover:border-emerald-500/30 transition-all">
+            <div className="bg-[#0a0a0a] border border-white/5 rounded-[32px] sm:rounded-[40px] p-6 sm:p-8 group hover:border-emerald-500/30 transition-all">
               <div className="space-y-4">
                 <div className="flex gap-1">
-                  {[1,2,3,4,5].map(i => <svg key={i} className="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>)}
+                  {[1,2,3,4,5].map(i => <svg key={i} className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>)}
                 </div>
-                <p className="text-white font-bold uppercase text-xs tracking-widest">Avaliação 5 estrelas no Google</p>
+                <p className="text-white font-bold uppercase text-[10px] sm:text-xs tracking-widest">Avaliação 5 estrelas no Google</p>
               </div>
             </div>
           </div>
@@ -570,23 +615,23 @@ _Aguardando agendamento da videoconferência._`;
       </section>
 
       {/* Preços Dinâmicos */}
-      <section id="precos" className="py-32 px-4 bg-[#0a0a0a]">
+      <section id="precos" className="py-20 sm:py-32 px-4 bg-[#0a0a0a]">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-24">
-            <h2 className="text-5xl sm:text-6xl font-black text-white uppercase tracking-tighter leading-none">Planos e Valores</h2>
+          <div className="text-center mb-16 sm:mb-24">
+            <h2 className="text-4xl sm:text-6xl font-black text-white uppercase tracking-tighter leading-none">Planos e Valores</h2>
             <p className="text-slate-500 font-medium mt-4">Os melhores preços com emissão garantida.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {config.plans.map((plan) => (
-              <div key={plan.id} className={`group relative bg-[#0f0f0f] p-10 rounded-[40px] border transition-all duration-500 ${plan.popular ? 'border-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.15)] scale-105 z-10' : 'border-white/5 hover:border-white/10'}`}>
+              <div key={plan.id} className={`group relative bg-[#0f0f0f] p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] border transition-all duration-500 ${plan.popular ? 'border-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.15)] md:scale-105 z-10' : 'border-white/5 hover:border-white/10'}`}>
                 {plan.popular && <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">Mais Vendido</span>}
-                <h3 className="text-2xl font-black mb-2 uppercase tracking-tighter text-white">{plan.name}</h3>
-                <div className="mb-8">
-                  <span className="text-5xl font-black text-white tracking-tighter">{plan.price}</span>
+                <h3 className="text-xl sm:text-2xl font-black mb-2 uppercase tracking-tighter text-white">{plan.name}</h3>
+                <div className="mb-6 sm:mb-8">
+                  <span className="text-4xl sm:text-5xl font-black text-white tracking-tighter">{plan.price}</span>
                 </div>
-                <ul className="space-y-4 mb-12">
+                <ul className="space-y-3 sm:space-y-4 mb-8 sm:mb-12">
                   {plan.features.map((f, i) => (
-                    <li key={i} className="flex items-center gap-3 text-slate-400 font-medium text-sm">
+                    <li key={i} className="flex items-center gap-3 text-slate-400 font-medium text-xs sm:text-sm">
                       <div className="w-5 h-5 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                       </div>
@@ -594,7 +639,7 @@ _Aguardando agendamento da videoconferência._`;
                     </li>
                   ))}
                 </ul>
-                <button onClick={() => { setSelectedPlan(plan); setFunnelStep('lead'); }} className={`w-full py-5 rounded-2xl font-black text-lg transition-all uppercase tracking-tighter ${plan.popular ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-600/20' : 'bg-white text-black hover:bg-slate-200'}`}>
+                <button onClick={() => { setSelectedPlan(plan); setFunnelStep('lead'); }} className={`w-full py-4 sm:py-5 rounded-2xl font-black text-base sm:text-lg transition-all uppercase tracking-tighter ${plan.popular ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-600/20' : 'bg-white text-black hover:bg-slate-200'}`}>
                   CONTRATAR AGORA
                 </button>
               </div>
@@ -604,50 +649,50 @@ _Aguardando agendamento da videoconferência._`;
       </section>
       
       {/* Depoimentos */}
-      <section className="py-32 px-4 bg-[#050505] overflow-hidden">
+      <section className="py-20 sm:py-32 px-4 bg-[#050505] overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-24">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-16 sm:mb-24">
             <div className="max-w-2xl">
-              <h2 className="text-5xl sm:text-7xl font-black text-white uppercase tracking-tighter leading-[0.85] mb-6">
+              <h2 className="text-4xl sm:text-7xl font-black text-white uppercase tracking-tighter leading-[0.85] mb-6">
                 Quem usa,<br/><span className="text-emerald-500">recomenda.</span>
               </h2>
-              <p className="text-slate-500 font-medium text-lg">Milhares de clientes satisfeitos em todo o Brasil.</p>
+              <p className="text-slate-500 font-medium text-base sm:text-lg">Milhares de clientes satisfeitos em todo o Brasil.</p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
               <div className="flex -space-x-4">
                 {[1,2,3,4].map(i => (
-                  <div key={i} className="w-12 h-12 rounded-full border-4 border-[#050505] overflow-hidden bg-slate-800">
+                  <div key={i} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-[#050505] overflow-hidden bg-slate-800">
                     <img src={`https://picsum.photos/seed/user${i}/100/100`} alt="User" className="w-full h-full object-cover" />
                   </div>
                 ))}
               </div>
               <div className="text-left">
-                <p className="text-white font-black text-xl leading-none tracking-tighter">+5.000</p>
-                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Clientes Ativos</p>
+                <p className="text-white font-black text-lg sm:text-xl leading-none tracking-tighter">+5.000</p>
+                <p className="text-slate-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Clientes Ativos</p>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {testimonials.map((t, i) => (
-              <div key={i} className={`p-8 rounded-[40px] border border-white/5 bg-[#0a0a0a] flex flex-col justify-between transition-all hover:border-emerald-500/30 group ${i === 0 ? 'md:col-span-2 md:row-span-2' : ''}`}>
-                <div className="space-y-6">
+              <div key={i} className={`p-6 sm:p-8 rounded-[32px] sm:rounded-[40px] border border-white/5 bg-[#0a0a0a] flex flex-col justify-between transition-all hover:border-emerald-500/30 group ${i === 0 ? 'md:col-span-2 md:row-span-2' : ''}`}>
+                <div className="space-y-4 sm:space-y-6">
                   <div className="flex gap-1">
                     {[1,2,3,4,5].map(star => (
-                      <svg key={star} className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                      <svg key={star} className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                     ))}
                   </div>
-                  <p className={`text-white font-medium leading-relaxed tracking-tight ${i === 0 ? 'text-2xl' : 'text-lg'}`}>
+                  <p className={`text-white font-medium leading-relaxed tracking-tight ${i === 0 ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'}`}>
                     "{t.text}"
                   </p>
                 </div>
-                <div className="flex items-center gap-4 mt-12">
-                  <div className="w-12 h-12 rounded-2xl overflow-hidden border border-white/10">
+                <div className="flex items-center gap-4 mt-8 sm:mt-12">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl overflow-hidden border border-white/10">
                     <img src={t.avatar} alt={t.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
                   </div>
                   <div>
-                    <h4 className="text-white font-black uppercase tracking-tighter text-sm">{t.name}</h4>
-                    <p className="text-emerald-500 text-[10px] font-black uppercase tracking-widest">{t.role}</p>
+                    <h4 className="text-white font-black uppercase tracking-tighter text-xs sm:text-sm">{t.name}</h4>
+                    <p className="text-emerald-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">{t.role}</p>
                   </div>
                 </div>
               </div>
@@ -657,22 +702,22 @@ _Aguardando agendamento da videoconferência._`;
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="py-32 px-4 bg-[#050505]">
+      <section id="faq" className="py-20 sm:py-32 px-4 bg-[#050505]">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl font-black text-white uppercase tracking-tighter leading-none">Dúvidas Frequentes</h2>
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-4xl sm:text-5xl font-black text-white uppercase tracking-tighter leading-none">Dúvidas Frequentes</h2>
           </div>
           <div className="space-y-4">
             {faqs.map((faq, idx) => (
-              <div key={idx} className="bg-[#0a0a0a] rounded-3xl border border-white/5 overflow-hidden transition-all hover:border-white/10">
-                <button onClick={() => setOpenFaq(openFaq === idx ? null : idx)} className="w-full flex items-center justify-between p-8 text-left font-black text-white uppercase tracking-tighter text-lg">
+              <div key={idx} className="bg-[#0a0a0a] rounded-2xl sm:rounded-3xl border border-white/5 overflow-hidden transition-all hover:border-white/10">
+                <button onClick={() => setOpenFaq(openFaq === idx ? null : idx)} className="w-full flex items-center justify-between p-6 sm:p-8 text-left font-black text-white uppercase tracking-tighter text-base sm:text-lg">
                   {faq.q}
-                  <div className={`w-8 h-8 rounded-full bg-white/5 flex items-center justify-center transition-transform ${openFaq === idx ? 'rotate-180 bg-emerald-500/20 text-emerald-500' : ''}`}>
+                  <div className={`w-8 h-8 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0 transition-transform ${openFaq === idx ? 'rotate-180 bg-emerald-500/20 text-emerald-500' : ''}`}>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </div>
                 </button>
                 {openFaq === idx && (
-                  <div className="px-8 pb-8 text-slate-400 font-medium leading-relaxed animate-slide-down">
+                  <div className="px-6 sm:px-8 pb-6 sm:pb-8 text-slate-400 font-medium leading-relaxed text-sm sm:text-base animate-slide-down">
                     {faq.a}
                   </div>
                 )}
@@ -697,6 +742,10 @@ _Aguardando agendamento da videoconferência._`;
                   <div className="flex gap-2 ml-4">
                     <button onClick={() => setAdminTab('config')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${adminTab === 'config' ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Configurações</button>
                     <button onClick={() => setAdminTab('database')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${adminTab === 'database' ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>Dados de Emissão ({leads.length})</button>
+                    <button onClick={handleDownloadProject} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase bg-white/5 text-white/40 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 animate-shake">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Baixar Projeto (ZIP)
+                    </button>
                   </div>
                 )}
               </div>
@@ -706,14 +755,14 @@ _Aguardando agendamento da videoconferência._`;
             </div>
 
             {!isAuthorized ? (
-              <div className="p-20 text-center space-y-10">
-                <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Acesso Restrito</h3>
+              <div className="p-10 sm:p-20 text-center space-y-10">
+                <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tighter">Acesso Restrito</h3>
                 <form onSubmit={handleAdminLogin} className="max-w-xs mx-auto space-y-6">
                   <div className="space-y-2">
-                    <input autoFocus type="password" value={adminPass} onChange={e => setAdminPass(e.target.value)} className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl text-center font-black text-xl outline-none focus:border-emerald-500 transition-all text-white" placeholder="Senha master" />
+                    <input autoFocus type="password" value={adminPass} onChange={e => setAdminPass(e.target.value)} className="w-full p-4 sm:p-6 bg-white/5 border border-white/10 rounded-2xl text-center font-black text-lg sm:text-xl outline-none focus:border-emerald-500 transition-all text-white" placeholder="Senha master" />
                     <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">Dica: 3312</p>
                   </div>
-                  <button type="submit" className="w-full bg-emerald-600 text-white py-6 rounded-2xl font-black uppercase tracking-widest shadow-lg hover:bg-emerald-500 transition-all">ENTRAR</button>
+                  <button type="submit" className="w-full bg-emerald-600 text-white py-4 sm:py-6 rounded-2xl font-black uppercase tracking-widest shadow-lg hover:bg-emerald-500 transition-all">ENTRAR</button>
                 </form>
               </div>
             ) : adminTab === 'config' ? (
@@ -861,6 +910,20 @@ _Aguardando agendamento da videoconferência._`;
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Exportação e Backup */}
+                <div className="space-y-10 pt-10 border-t border-white/5">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div>
+                      <h3 className="font-black text-emerald-500 uppercase text-[10px] tracking-[0.3em] mb-2">Exportação e Backup</h3>
+                      <p className="text-slate-500 text-xs font-medium">Baixe todos os arquivos do site para backup ou para mover para uma hospedagem externa.</p>
+                    </div>
+                    <button onClick={handleDownloadProject} className="bg-white text-black px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-200 transition-all flex items-center gap-3 animate-shake">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      BAIXAR PROJETO COMPLETO (.ZIP)
+                    </button>
                   </div>
                 </div>
 
@@ -1149,8 +1212,8 @@ _Aguardando agendamento da videoconferência._`;
         </div>
       </footer>
 
-      <a href={`https://wa.me/${config.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="fixed bottom-8 right-8 bg-[#25D366] text-white p-5 rounded-full shadow-2xl hover:scale-110 transition-all z-50 active:scale-95">
-        <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+      <a href={`https://wa.me/${config.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 bg-[#25D366] text-white p-3 sm:p-4 rounded-full shadow-2xl hover:scale-110 transition-all z-50 active:scale-95">
+        <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
       </a>
     </div>
   );
